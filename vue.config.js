@@ -69,7 +69,7 @@ module.exports = {
     },
     css: {
         extract: IS_PROD,
-        requireModuleExtension: false,// 去掉文件名中的 .module
+        requireModuleExtension: true,// 去掉文件名中的 .module
         loaderOptions: {
                 // 给 less-loader 传递 Less.js 相关选项
                 less: {
@@ -78,9 +78,9 @@ module.exports = {
                         primary: '#333'
                     }
                 },
-                sass: {
-                    prependData: `@import "./src/assets/css/main.scss";`                   
-                }
+                // scss: {
+                //     prependData: `@import "@/assets/css/main.scss";`                   
+                // }
         }
     },
     devServer: {
@@ -95,13 +95,13 @@ module.exports = {
             hotOnly: true, // 热更新
             // proxy: 'http://localhost:8080'   // 配置跨域处理,只有一个代理
             proxy: { //配置多个跨域
-                "/api": {
-                    target: "http://172.11.11.11:7071",
+                "/devApi": {
+                    target: "http://www.web-jshtml.cn/productapi",
                     changeOrigin: true,
                     // ws: true,//websocket支持
                     secure: false,
                     pathRewrite: {
-                        "^/api": "/"
+                        "^/devApi": ""
                     }
                 },
                 "/api2": {

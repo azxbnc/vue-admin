@@ -26,25 +26,24 @@
             <label for="" class="label">验证码</label>          
             <el-row :gutter="10">
               <el-col :span="15"><el-input v-model.number="ruleForm.Checkpass" type="text" maxlength="6" minlength="6" class="block"></el-input></el-col>
-              <el-col :span="9"><el-button type="success" class="block" @click="getMsg">获取验证码</el-button></el-col>
+              <el-col :span="9"><el-button type="success" class="block">获取验证码</el-button></el-col>
             </el-row>
           </el-form-item>
 
           <el-form-item>
-            <el-button type="danger" @click="submitForm('ruleForm')" class="login_btn elButton"  :disabled="false">{{CurrentIndex == 0 ? '登录' : '注册' }}</el-button>
+            <el-button type="danger" @click="submitForm('ruleForm')" class="login_btn elButton">提交</el-button>
           </el-form-item>
         </el-form>
     </div>
 </template>
 <script>
 
-import { stripscript, validateEmail } from '@/common/utils/utils.js'
-import { reactive, ref, onMounted } from '@vue/composition-api'
-import { GetSms } from '@/api/login.js'
+import {stripscript} from '@/common/utils/utils.js'
 export default {
   name: "Login",
-  setup(props, { refs, root }) {
-    var validateUsername = (rule, value, callback) => {
+  data () {
+      
+      var validateUsername = (rule, value, callback) => {
         let reg = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
         if (value === '') {
           callback(new Error('请输入用户名'));
@@ -57,8 +56,8 @@ export default {
       };
       var validatePwd = (rule, value, callback) => {
         let reg = /^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]{6,20})$/;
-        ruleForm.Pwd = stripscript(value);
-        value = ruleForm.Pwd;
+        this.ruleForm.Pwd = stripscript(value);
+        value = this.ruleForm.Pwd;
         value = stripscript(value);
         if (value === '') {
           callback(new Error('请输入密码'));
@@ -69,13 +68,13 @@ export default {
         }
       };
       var validatePwdss = (rule, value, callback) => {
-        if(CurrentIndex.value === 0) {return callback();}
+        if(this.CurrentIndex === 0) {return callback();}
         let reg = /^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]{6,20})$/;
-        ruleForm.Pwdss = stripscript(value);
-        value = ruleForm.Pwdss;
+        this.ruleForm.Pwdss = stripscript(value);
+        value = this.ruleForm.Pwdss;
         if (value === '') {
           callback(new Error('请输入密码'));
-        } else if (value !== ruleForm.Pwd) {
+        } else if (value !== this.ruleForm.Pwd) {
           callback(new Error('两次输入密码不一致'));
         } else {
           callback();
@@ -83,8 +82,8 @@ export default {
       };
       var validateCode = (rule, value, callback) => {
         let reg = /^[a-z0-9]{6}$/;
-        ruleForm.Checkpass = stripscript(value);
-        value = ruleForm.Checkpass;
+        this.ruleForm.Checkpass = stripscript(value);
+        value = this.ruleForm.Checkpass;
         if (!value) {
           callback(new Error('验证码不能为空'));
         } else if (!reg.test(value)) {
@@ -93,19 +92,20 @@ export default {
           callback();
         }
       };
-    const items = reactive([
+    return {
+      items: [
         '登录',
         '注册'
-      ]);
-    const isShow =  ref(null);
-    const CurrentIndex = ref(0);
-    const ruleForm = reactive({
+      ],
+      isShow: null,
+      CurrentIndex: 0,
+      ruleForm: {
           Username: '',
           Pwd: '',
           Pwdss: '',
           Checkpass: ''
-        });
-    const rules = reactive({
+        },
+        rules: {
           Username: [
             { validator: validateUsername, trigger: 'blur' }
           ],
@@ -118,17 +118,21 @@ export default {
           Checkpass: [
             { validator: validateCode, trigger: 'blur' }
           ]
-        });
-    const isCurrent = (index => {
-      CurrentIndex.value = index;
+        }
+    };
+  },
+  methods: {
+    isCurrent(index) {
+      this.CurrentIndex = index;
       if(index == 0) {
-        isShow.value = false;
+        this.isShow = false;
       } else {
-        isShow.value = true;
-      }
-    });
-    const submitForm = (formName => {
-        refs[formName].validate((valid) => {
+        this.isShow = true;
+      }   
+    },
+
+    submitForm(formName) {
+        this.$refs[formName].validate((valid) => {
           if (valid) {
             alert('submit!');
           } else {
@@ -136,43 +140,8 @@ export default {
             return false;
           }
         });
-    });
-    const getMsg = (() => {
-
-      if(ruleForm.Username == '') {
-        root.$message.error('邮箱不能为空！！');
-        return false;
       }
-      if(validateEmail(ruleForm.Username)) {
-        root.$message.error('邮箱格式有误！！')
-        return false;
-      }
-      let data = {
-        username: ruleForm.Username,
-        module: 'login'
-      }
-      GetSms(data).then(res => {
-        console.log(res);
-        
-      }, error => {
-        console.log(error);
-        
-      })
-    })
-    return {
-      items,
-      CurrentIndex,
-      isShow,
-      ruleForm,
-      rules,
-      isCurrent,
-      submitForm,
-      getMsg
-    };
-    onMounted(() => {
-      
-    })
-  }
+  },
 }
 </script>
 <style lang="scss" scoped>
