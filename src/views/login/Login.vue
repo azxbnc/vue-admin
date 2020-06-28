@@ -25,8 +25,8 @@
           <el-form-item prop="Checkpass" class="item_form">
             <label for="" class="label">验证码</label>          
             <el-row :gutter="10">
-              <el-col :span="15"><el-input v-model.number="ruleForm.Checkpass" type="text" maxlength="6" minlength="6" class="block"></el-input></el-col>
-              <el-col :span="9"><el-button type="success" class="block" @click="getMsg">获取验证码</el-button></el-col>
+              <el-col :span="15"><el-input v-model="ruleForm.Checkpass" type="text" maxlength="6" minlength="6" class="block"></el-input></el-col>
+              <el-col :span="9"><el-button type="success" class="block" @click="getMsg" :disabled="codeButtonStatus.status">{{codeButtonStatus.text}}</el-button></el-col>
             </el-row>
           </el-form-item>
 
@@ -40,7 +40,7 @@
 
 import { stripscript, validateEmail } from '@/common/utils/utils.js'
 import { reactive, ref, onMounted } from '@vue/composition-api'
-import { GetSms } from '@/api/login.js'
+import { GetSms, Register, Login } from '@/api/login.js'
 export default {
   name: "Login",
   setup(props, { refs, root }) {
@@ -99,6 +99,12 @@ export default {
       ]);
     const isShow =  ref(null);
     const CurrentIndex = ref(0);
+    const codeButtonStatus = reactive({
+      status: false,
+      text: '获取验证码'
+    })
+    const timer = ref(null);
+    const module = ref('login')
     const ruleForm = reactive({
           Username: '',
           Pwd: '',
@@ -123,20 +129,82 @@ export default {
       CurrentIndex.value = index;
       if(index == 0) {
         isShow.value = false;
+        module.value = 'login'
       } else {
         isShow.value = true;
+        module.value = 'register'
       }
+      refs.ruleForm.resetFields();
     });
     const submitForm = (formName => {
         refs[formName].validate((valid) => {
           if (valid) {
-            alert('submit!');
+            module.value === 'login'? login() : register();
           } else {
             console.log('error submit!!');
             return false;
           }
         });
     });
+    const login = (()=> {
+      let requestData = {
+        username: ruleForm.Username,
+        Password: ruleForm.Pwd,
+        code: ruleForm.Checkpass,
+        module: 'login'
+      }
+      Login(requestData).then(res=> {
+        console.log(res);
+        root.$message({
+          message: res.data.message,
+          type: 'success'
+        })
+      }, error=> {
+
+      })
+        })
+    const register = (()=> {
+      let requestData = {
+        username: ruleForm.Username,
+        Password: ruleForm.Pwd,
+        code: ruleForm.Checkpass,
+        module: 'register'
+      }
+      Register(requestData).then(res=> {
+        console.log(res);          
+        let data = res.data;
+        root.$message({
+          showClose: 'true',
+          message: data.message,
+          type: 'success'
+        })
+        isCurrent(0);
+        clearInt();              
+      },error=> {
+        console.log(error);       
+      })           
+    })
+    const countDown = ((num) => {
+      if(timer.value) { clearInterval(timer.value); }
+      let time = num;
+      timer.value = setInterval(() => {
+        time--;
+        // console.log(time);
+        if(time === 0) {
+          clearInterval(timer.value);
+          codeButtonStatus.status = false;
+          codeButtonStatus.text = '重新获取';
+      } else {
+          codeButtonStatus.text = `倒计时${time}秒`;
+      }
+      }, 1000);
+      
+    })
+    const clearInt = (()=> {
+      codeButtonStatus.status = false;
+      codeButtonStatus.text = '获取验证码';
+      clearInterval(timer.value);
+    })
     const getMsg = (() => {
 
       if(ruleForm.Username == '') {
@@ -147,17 +215,28 @@ export default {
         root.$message.error('邮箱格式有误！！')
         return false;
       }
+      codeButtonStatus.status = true;
+      codeButtonStatus.text = '发送中';
       let data = {
         username: ruleForm.Username,
-        module: 'login'
+        module: module
       }
-      GetSms(data).then(res => {
-        console.log(res);
-        
+      console.log(module.value);
+      
+      setTimeout(() => {
+        GetSms(data).then(res => {
+        let data = res.data;
+        root.$message({
+          showClose: 'true',
+          message: data.message,
+          type: 'success'
+        })
+        countDown(30);
       }, error => {
         console.log(error);
         
       })
+      }, 3000)
     })
     return {
       items,
@@ -167,7 +246,8 @@ export default {
       rules,
       isCurrent,
       submitForm,
-      getMsg
+      getMsg,
+      codeButtonStatus
     };
     onMounted(() => {
       
